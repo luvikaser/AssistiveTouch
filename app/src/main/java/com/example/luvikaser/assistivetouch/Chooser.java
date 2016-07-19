@@ -1,21 +1,13 @@
 package com.example.luvikaser.assistivetouch;
 
 import android.app.Activity;
-import android.app.ListActivity;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,16 +18,19 @@ import java.util.List;
  * Created by haibt on 7/15/2016.
  */
 public class Chooser extends Activity {
-    private PackageManager pm;
-    private List<ResolveInfo> launchables = null;
-    private ArrayList<String> existPackages;
-    private AppAdapter adapter = null;
-    private boolean[] itemCheckeds = null;
-    private Intent intent = null;
+
+    private static final String STATE_CHECKED_ITEM = "itemChecked";
+    private PackageManager mPackageManager;
+    private List<ResolveInfo> mLaunchables = null;
+    private ArrayList<String> mExistedPackages;
+    private AppAdapter mAdapter = null;
+    private boolean[] mItemCheckeds = null;
+    private Intent mIntent = null;
+
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-        itemCheckeds = savedInstanceState.getBooleanArray("itemChecked");
+        mItemCheckeds = savedInstanceState.getBooleanArray(STATE_CHECKED_ITEM);
     }
 
     @Override
@@ -43,42 +38,47 @@ public class Chooser extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.chooser_layout);
 
-        intent = getIntent();
-        existPackages = intent.getStringArrayListExtra("MESSAGE_existPackages");
-        pm = getPackageManager();
+        mIntent = getIntent();
+        mExistedPackages = mIntent.getStringArrayListExtra(Constants.MESSAGE_EXISTED_PACKAGES);
+        mPackageManager = getPackageManager();
         Intent main = new Intent(Intent.ACTION_MAIN, null);
 
         main.addCategory(Intent.CATEGORY_LAUNCHER);
-        launchables = pm.queryIntentActivities(main, 0);
+        mLaunchables = mPackageManager.queryIntentActivities(main, 0);
 
-        for(Iterator<ResolveInfo> iterator = launchables.iterator(); iterator.hasNext(); ){
+        for(Iterator<ResolveInfo> iterator = mLaunchables.iterator(); iterator.hasNext(); ) {
             ResolveInfo resolveInfo = iterator.next();
-            if (existPackages.contains(resolveInfo.activityInfo.packageName))
-            iterator.remove();
+            if (mExistedPackages.contains(resolveInfo.activityInfo.packageName)) {
+                iterator.remove();
+            }
         }
 
-        Collections.sort(launchables,
-                new ResolveInfo.DisplayNameComparator(pm));
+        Collections.sort(mLaunchables,
+                new ResolveInfo.DisplayNameComparator(mPackageManager));
 
 
         ((Button) findViewById(R.id.button)).setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View view) {
 
                 Intent newIntent = new Intent();
-                newIntent.putExtra("MESSAGE_position", intent.getIntExtra("MESSAGE_position", 0));
+                newIntent.putExtra(Constants.MESSAGE_POSITION, mIntent.getIntExtra(Constants.MESSAGE_POSITION, 0));
 
-                ArrayList<String> listPackageChoose = new ArrayList<String>();
-                for(int i = 0; i < launchables.size(); ++i)
+                ArrayList<String> listPackageChoose = new ArrayList<>();
+                for (int i = 0; i < mLaunchables.size(); ++i) {
                     if (AppAdapter.itemCheckeds[i]) {
-                        listPackageChoose.add(launchables.get(i).activityInfo.packageName);
+                        listPackageChoose.add(mLaunchables.get(i).activityInfo.packageName);
                     }
-                newIntent.putStringArrayListExtra("MESSAGE_newPackages", listPackageChoose);
+                }
+
+                newIntent.putStringArrayListExtra(Constants.MESSAGE_NEW_PACKAGES, listPackageChoose);
                 if (listPackageChoose.size() == 0) {
                     setResult(MainActivity.RESULT_CANCELED, newIntent);
                 } else {
                     setResult(MainActivity.RESULT_OK, newIntent);
                 }
+
                 finish();
             }
         });
@@ -88,18 +88,26 @@ public class Chooser extends Activity {
     protected void onResume() {
         super.onResume();
 
-        if (itemCheckeds == null)
-            itemCheckeds = new boolean[launchables.size()];
+        if (mItemCheckeds == null) {
+            mItemCheckeds = new boolean[mLaunchables.size()];
+        }
 
-        adapter = new AppAdapter(this, launchables, pm, itemCheckeds, 9 - existPackages.size());
+        int nChosen = 0;
+        for (String s : mExistedPackages) {
+            if (s.length() > 0) {
+                ++nChosen;
+            }
+        }
+
+        mAdapter = new AppAdapter(this, mLaunchables, mPackageManager, mItemCheckeds, Constants.PACKAGE_NUMBER - nChosen);
 
         ListView listView = (ListView) findViewById(R.id.listView);
-        listView.setAdapter(adapter);
+        listView.setAdapter(mAdapter);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBooleanArray("itemChecked", AppAdapter.itemCheckeds);
+        outState.putBooleanArray(STATE_CHECKED_ITEM, AppAdapter.itemCheckeds);
     }
 }

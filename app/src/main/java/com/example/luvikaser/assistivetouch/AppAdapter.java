@@ -23,17 +23,17 @@ import java.util.List;
  * Created by Luvi Kaser on 7/18/2016.
  */
 class AppAdapter extends BaseAdapter {
-    private PackageManager pm = null;
-    private Activity context;
+    private PackageManager mPackageManager = null;
+    private Activity mContext;
     private int nItem;
-    private List<ResolveInfo> apps;
+    private List<ResolveInfo> mApps;
     public static boolean[] itemCheckeds;
 
-    AppAdapter(Activity context, List<ResolveInfo> apps, PackageManager pm, boolean[] itemCheckeds, int nItem) {
+    AppAdapter(Activity context, List<ResolveInfo> apps, PackageManager packageManager, boolean[] itemCheckeds, int nItem) {
         super();
-        this.pm = pm;
-        this.context = context;
-        this.apps = apps;
+        this.mPackageManager = packageManager;
+        this.mContext = context;
+        this.mApps = apps;
         this.itemCheckeds = itemCheckeds;
         this.nItem = nItem;
     }
@@ -46,12 +46,12 @@ class AppAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return apps.size();
+        return mApps.size();
     }
 
     @Override
     public ResolveInfo getItem(int i) {
-        return apps.get(i);
+        return mApps.get(i);
     }
 
     @Override
@@ -64,7 +64,7 @@ class AppAdapter extends BaseAdapter {
                         ViewGroup parent) {
         final ViewHolder holder;
         if (convertView == null) {
-            LayoutInflater inflater = context.getLayoutInflater();
+            LayoutInflater inflater = mContext.getLayoutInflater();
             convertView = inflater.inflate(R.layout.row, null);
 
             holder = new ViewHolder();
@@ -73,21 +73,22 @@ class AppAdapter extends BaseAdapter {
             holder.ck1 = (CheckBox) convertView.findViewById(R.id.checkBox);
 
             convertView.setTag(holder);
-        }
-        else
+        } else {
             holder = (ViewHolder) convertView.getTag();
+        }
 
-        holder.apkName.setText(getItem(position).loadLabel(pm));
+        holder.apkName.setText(getItem(position).loadLabel(mPackageManager));
         holder.ck1.setChecked(itemCheckeds[position]);
-        holder.apkIcon.setImageDrawable(getItem(position).loadIcon(pm));
+        holder.apkIcon.setImageDrawable(getItem(position).loadIcon(mPackageManager));
 
         holder.ck1.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
-                // TODO Auto-generated method stub
                 if (holder.ck1.isChecked()) {
                     if (nItem == 0) {
                         holder.ck1.setChecked(false);
+                        // TODO: change toast message
                         Toast.makeText(v.getContext(), "...", Toast.LENGTH_SHORT).show();
                     } else {
                         --nItem;
@@ -96,7 +97,6 @@ class AppAdapter extends BaseAdapter {
                 } else {
                     ++nItem;
                     itemCheckeds[position] = false;
-
                 }
             }
         });

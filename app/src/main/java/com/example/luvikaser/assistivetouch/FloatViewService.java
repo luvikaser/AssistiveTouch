@@ -25,7 +25,6 @@ import java.util.Collections;
 public class FloatViewService extends Service {
 
     private static final String DATA = "PackageNames" ;
-    private static final int nPACKAGENAMES = 9;
     private WindowManager mWindowManager;
     private ImageView mImageView = null;
     private WindowManager.LayoutParams mParams;
@@ -42,10 +41,11 @@ public class FloatViewService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mPackageNames = new ArrayList<>(Collections.nCopies(9, ""));
+        mPackageNames = new ArrayList<>(Collections.nCopies(Constants.PACKAGE_NUMBER, ""));
         mSharedPreferences = getSharedPreferences(DATA, Context.MODE_PRIVATE);
+
         if (mSharedPreferences != null) {
-            for (int i = 0; i < nPACKAGENAMES; ++i){
+            for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i){
                 mPackageNames.set(i, mSharedPreferences.getString(i + "", ""));
             }
         }
@@ -62,16 +62,19 @@ public class FloatViewService extends Service {
         ArrayList<String> tmpArray = null;
 
         if (intent != null) {
-            tmpArray = intent.getStringArrayListExtra("package_names");
+            tmpArray = intent.getStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES);
         }
 
         if (tmpArray != null) {
             mPackageNames = tmpArray;
             SharedPreferences.Editor editor = mSharedPreferences.edit();
-            for(int i = 0; i < nPACKAGENAMES; ++i)
+            for(int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
                 editor.putString(i + "", mPackageNames.get(i));
+            }
+
             editor.apply();
         }
+
         if (mImageView != null) {
             return START_STICKY;
         }
@@ -111,7 +114,7 @@ public class FloatViewService extends Service {
 
                     // Use FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS to hide app from recent apps
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-                    intent.putStringArrayListExtra("package_names", mPackageNames);
+                    intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
                     startActivity(intent);
                     return true;
                 }
@@ -148,7 +151,7 @@ public class FloatViewService extends Service {
         @Override
         public void onReceive(Context context, Intent myIntent) {
 
-            if ( myIntent.getAction().equals(CONFIGURATION_CHANGED) ) {
+            if (myIntent.getAction().equals(CONFIGURATION_CHANGED)) {
                 moveIconToSides();
             }
         }

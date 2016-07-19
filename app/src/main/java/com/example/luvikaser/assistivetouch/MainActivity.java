@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
         mImageList.add((ImageView) findViewById(R.id.imageView33));
 
         Intent intent = getIntent();
-        mPackageNames = intent.getStringArrayListExtra("package_names");
+        mPackageNames = intent.getStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES);
 
         for (int i = 0; i < mImageList.size(); ++i) {
             if (mPackageNames.get(i).length() != 0) {
@@ -82,8 +82,8 @@ public class MainActivity extends Activity {
                 startActivity(intent);
             } else {
                 Intent intent = new Intent(getBaseContext(), Chooser.class);
-                intent.putExtra("MESSAGE_position", mPosition);
-                intent.putStringArrayListExtra("MESSAGE_existPackages", mPackageNames);
+                intent.putExtra(Constants.MESSAGE_POSITION, mPosition);
+                intent.putStringArrayListExtra(Constants.MESSAGE_EXISTED_PACKAGES, mPackageNames);
                 startActivityForResult(intent, MY_REQUEST_CODE);
             }
         }
@@ -99,13 +99,15 @@ public class MainActivity extends Activity {
         @Override
         public boolean onLongClick(View v) {
 
+            // TODO: move app icon -> rearrange/remove
+
             // Vibrate device
             Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             vibrator.vibrate(500);
 
             // Start chooser
             Intent intent = new Intent(getBaseContext(), Chooser.class);
-            intent.putExtra("MESSAGE_position", mPosition);
+            intent.putExtra(Constants.MESSAGE_POSITION, mPosition);
             startActivityForResult(intent, MY_REQUEST_CODE);
             return true;
         }
@@ -113,12 +115,11 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d("MainActivity", "onActivityResult");
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == MY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
-                int position = data.getIntExtra("MESSAGE_position", 0);
-                ArrayList<String> newPackages = data.getStringArrayListExtra("MESSAGE_newPackages");
+                int position = data.getIntExtra(Constants.MESSAGE_POSITION, 0);
+                ArrayList<String> newPackages = data.getStringArrayListExtra(Constants.MESSAGE_NEW_PACKAGES);
 
                 mPackageNames.set(position, newPackages.get(0));
                 try {
@@ -130,7 +131,7 @@ public class MainActivity extends Activity {
                 }
 
                 int i = 1;
-                for(int pos = 0; i < 9; ++pos) {
+                for(int pos = 0; i < Constants.PACKAGE_NUMBER; ++pos) {
                     if (i >= newPackages.size())
                         break;
                     if (mPackageNames.get(pos).length() == 0) {
@@ -156,7 +157,7 @@ public class MainActivity extends Activity {
 
         // Start service
         Intent intent = new Intent(this, FloatViewService.class);
-        intent.putStringArrayListExtra("package_names", mPackageNames);
+        intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
         startService(intent);
     }
 }
