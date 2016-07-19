@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -27,6 +28,7 @@ import java.util.List;
 public class Chooser extends Activity {
     private PackageManager pm;
     private List<ResolveInfo> launchables = null;
+    private ArrayList<String> existPackages;
     private AppAdapter adapter = null;
     private boolean[] itemCheckeds = null;
     private Intent intent = null;
@@ -42,11 +44,19 @@ public class Chooser extends Activity {
         setContentView(R.layout.chooser_layout);
 
         intent = getIntent();
+        existPackages = intent.getStringArrayListExtra("MESSAGE_existPackages");
         pm = getPackageManager();
         Intent main = new Intent(Intent.ACTION_MAIN, null);
 
         main.addCategory(Intent.CATEGORY_LAUNCHER);
         launchables = pm.queryIntentActivities(main, 0);
+
+        for(Iterator<ResolveInfo> iterator = launchables.iterator(); iterator.hasNext(); ){
+            ResolveInfo resolveInfo = iterator.next();
+            if (existPackages.contains(resolveInfo.activityInfo.packageName))
+            iterator.remove();
+        }
+
         Collections.sort(launchables,
                 new ResolveInfo.DisplayNameComparator(pm));
 
@@ -63,8 +73,12 @@ public class Chooser extends Activity {
                     if (AppAdapter.itemCheckeds[i]) {
                         listPackageChoose.add(launchables.get(i).activityInfo.packageName);
                     }
-                newIntent.putStringArrayListExtra("MESSAGE_itemCheckeds", listPackageChoose);
-                setResult(MainActivity.RESULT_OK, newIntent);
+                newIntent.putStringArrayListExtra("MESSAGE_newPackages", listPackageChoose);
+                if (listPackageChoose.size() == 0) {
+                    setResult(MainActivity.RESULT_CANCELED, newIntent);
+                } else {
+                    setResult(MainActivity.RESULT_OK, newIntent);
+                }
                 finish();
             }
         });
@@ -77,7 +91,7 @@ public class Chooser extends Activity {
         if (itemCheckeds == null)
             itemCheckeds = new boolean[launchables.size()];
 
-        adapter = new AppAdapter(this, launchables, pm, itemCheckeds, intent.getIntExtra("MESSAGE_nItem", 0));
+        adapter = new AppAdapter(this, launchables, pm, itemCheckeds, 9 - existPackages.size());
 
         ListView listView = (ListView) findViewById(R.id.listView);
         listView.setAdapter(adapter);

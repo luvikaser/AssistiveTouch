@@ -19,7 +19,6 @@ public class MainActivity extends Activity {
 
     public static final int MY_REQUEST_CODE = 12345;
     private static final float SCREEN_RATIO = 0.6f;
-    private int nItem = 9;
     private ArrayList<ImageView> mImageList;
     private ArrayList<String> mPackageNames;
     private PackageManager mPm;
@@ -55,7 +54,6 @@ public class MainActivity extends Activity {
 
         for (int i = 0; i < mImageList.size(); ++i) {
             if (mPackageNames.get(i).length() != 0) {
-                --nItem;
                 try {
                     mImageList.get(i).setImageDrawable(mPm.getApplicationIcon(mPackageNames.get(i)));
                 } catch (PackageManager.NameNotFoundException e) {
@@ -85,7 +83,7 @@ public class MainActivity extends Activity {
             } else {
                 Intent intent = new Intent(getBaseContext(), Chooser.class);
                 intent.putExtra("MESSAGE_position", mPosition);
-                intent.putExtra("MESSAGE_nItem", nItem);
+                intent.putStringArrayListExtra("MESSAGE_existPackages", mPackageNames);
                 startActivityForResult(intent, MY_REQUEST_CODE);
             }
         }
@@ -120,10 +118,9 @@ public class MainActivity extends Activity {
         if (requestCode == MY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
                 int position = data.getIntExtra("MESSAGE_position", 0);
-                ArrayList<String> itemCheckeds = data.getStringArrayListExtra("MESSAGE_itemCheckeds");
-                nItem = -itemCheckeds.size();
+                ArrayList<String> newPackages = data.getStringArrayListExtra("MESSAGE_newPackages");
 
-                mPackageNames.set(position, itemCheckeds.get(0));
+                mPackageNames.set(position, newPackages.get(0));
                 try {
                     mImageList.get(position).setImageDrawable(mPm.getApplicationIcon(mPackageNames.get(position)));
                 } catch (PackageManager.NameNotFoundException e) {
@@ -134,10 +131,10 @@ public class MainActivity extends Activity {
 
                 int i = 1;
                 for(int pos = 0; i < 9; ++pos) {
-                    if (i >= itemCheckeds.size())
+                    if (i >= newPackages.size())
                         break;
                     if (mPackageNames.get(pos).length() == 0) {
-                        mPackageNames.set(pos, itemCheckeds.get(i));
+                        mPackageNames.set(pos, newPackages.get(i));
                         try {
                             mImageList.get(pos).setImageDrawable(mPm.getApplicationIcon(mPackageNames.get(pos)));
                         } catch (PackageManager.NameNotFoundException e) {
