@@ -17,9 +17,9 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
-    static final int MY_REQUEST_CODE = 12345;
-    static final float SCREEN_RATIO = 0.6f;
-    private List<ImageView> mImageList;
+    public static final int MY_REQUEST_CODE = 12345;
+    private static final float SCREEN_RATIO = 0.6f;
+    private ArrayList<ImageView> mImageList;
     private ArrayList<String> mPackageNames;
     private PackageManager mPm;
 

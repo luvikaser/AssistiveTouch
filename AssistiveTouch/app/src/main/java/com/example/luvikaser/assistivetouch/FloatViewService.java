@@ -1,8 +1,10 @@
 package com.example.luvikaser.assistivetouch;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.os.IBinder;
@@ -26,13 +28,11 @@ public class FloatViewService extends Service {
     private static final int nPACKAGENAMES = 9;
     private WindowManager mWindowManager;
     private ImageView mImageView = null;
-    private WindowManager.LayoutParams params;
+    private WindowManager.LayoutParams mParams;
     private GestureDetector mGestureDetector;
     private ArrayList<String> mPackageNames;
     private SharedPreferences mSharedPreferences;
-
-    public FloatViewService() {
-    }
+    private static final String CONFIGURATION_CHANGED = "android.intent.action.CONFIGURATION_CHANGED";
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -49,6 +49,11 @@ public class FloatViewService extends Service {
                 mPackageNames.set(i, mSharedPreferences.getString(i + "", ""));
             }
         }
+
+        // Register broadcast receiver for configuration changed event
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(CONFIGURATION_CHANGED);
+        this.registerReceiver(mBroadcastReceiver, filter);
     }
 
     @Override
@@ -65,7 +70,7 @@ public class FloatViewService extends Service {
             SharedPreferences.Editor editor = mSharedPreferences.edit();
             for(int i = 0; i < nPACKAGENAMES; ++i)
                 editor.putString(i + "", mPackageNames.get(i));
-            editor.commit();
+            editor.apply();
         }
         if (mImageView != null) {
             return START_STICKY;
@@ -77,16 +82,16 @@ public class FloatViewService extends Service {
         mImageView = new ImageView(this);
         mImageView.setImageResource(R.mipmap.ic_launcher);
 
-        params = new WindowManager.LayoutParams(
+        mParams = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
 
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-        params.x = 0;
-        params.y = 0;
+        mParams.gravity = Gravity.TOP | Gravity.LEFT;
+        mParams.x = 0;
+        mParams.y = 0;
 
         mImageView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
@@ -101,7 +106,10 @@ public class FloatViewService extends Service {
                 mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
 
                 if (mGestureDetector.onTouchEvent(event)) {
+                    // On click event, start the main activity
                     Intent intent = new Intent(FloatViewService.this, MainActivity.class);
+
+                    // Use FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS to hide app from recent apps
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
                     intent.putStringArrayListExtra("package_names", mPackageNames);
                     startActivity(intent);
@@ -110,45 +118,66 @@ public class FloatViewService extends Service {
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        initialX = params.x;
-                        initialY = params.y;
+                        initialX = mParams.x;
+                        initialY = mParams.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
                         return true;
+
                     case MotionEvent.ACTION_UP:
-
-                        params.x = Math.min(Math.max(0, params.x), mDisplayMetrics.widthPixels - mImageView.getWidth());
-                        params.y = Math.min(Math.max(0, params.y), mDisplayMetrics.heightPixels - mImageView.getHeight());
-
-                        // Distance to 2 sides of screen
-                        int d1, d2;
-                        d1 = params.x;
-                        d2 = mDisplayMetrics.widthPixels - params.x - mImageView.getWidth();
-
-                        if (d1 < d2) {
-                            params.x = 0;
-                        } else {
-                            params.x = mDisplayMetrics.widthPixels - mImageView.getWidth();
-                        }
-
-                        mWindowManager.updateViewLayout(mImageView, params);
-
+                        moveIconToSides();
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
-                        params.x = initialX + (int) (event.getRawX() - initialTouchX);
-                        params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                        mWindowManager.updateViewLayout(mImageView, params);
+                        mParams.x = initialX + (int) (event.getRawX() - initialTouchX);
+                        mParams.y = initialY + (int) (event.getRawY() - initialTouchY);
+                        mWindowManager.updateViewLayout(mImageView, mParams);
                         return true;
                 }
                 return false;
             }
         });
 
-        mWindowManager.addView(mImageView, params);
+        mWindowManager.addView(mImageView, mParams);
 
         return START_STICKY;
     }
+
+    /** Listen to the screen rotation */
+    public BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent myIntent) {
+
+            if ( myIntent.getAction().equals(CONFIGURATION_CHANGED) ) {
+                moveIconToSides();
+            }
+        }
+    };
+
+    /** Move the icon to a side of the screen */
+    private void moveIconToSides() {
+        DisplayMetrics mDisplayMetrics = new DisplayMetrics();
+        mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
+
+        // Standardize the coordinates
+        mParams.x = Math.min(Math.max(0, mParams.x), mDisplayMetrics.widthPixels - mImageView.getWidth());
+        mParams.y = Math.min(Math.max(0, mParams.y), mDisplayMetrics.heightPixels - mImageView.getHeight());
+
+        // Distance to 2 sides of screen
+        int d1, d2;
+        d1 = mParams.x;
+        d2 = mDisplayMetrics.widthPixels - mParams.x - mImageView.getWidth();
+
+        // Set the x-coordinate to the nearer side
+        if (d1 < d2) {
+            mParams.x = 0;
+        } else {
+            mParams.x = mDisplayMetrics.widthPixels - mImageView.getWidth();
+        }
+
+        mWindowManager.updateViewLayout(mImageView, mParams);
+    }
+
 
     @Override
     public void onDestroy() {
@@ -158,6 +187,8 @@ public class FloatViewService extends Service {
             mWindowManager.removeView(mImageView);
             mImageView = null;
         }
+
+        unregisterReceiver(mBroadcastReceiver);
     }
 
     private class SingleTapConfirm extends GestureDetector.SimpleOnGestureListener {
