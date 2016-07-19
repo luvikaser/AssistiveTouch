@@ -15,6 +15,7 @@ import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -24,15 +25,17 @@ import java.util.List;
 class AppAdapter extends BaseAdapter {
     private PackageManager pm = null;
     private Activity context;
+    private int nItem;
     private List<ResolveInfo> apps;
-    public static boolean[] itemChecked;
+    public static boolean[] itemCheckeds;
 
-    AppAdapter(Activity context, List<ResolveInfo> apps, PackageManager pm, boolean[] itemChecked) {
+    AppAdapter(Activity context, List<ResolveInfo> apps, PackageManager pm, boolean[] itemCheckeds, int nItem) {
         super();
         this.pm = pm;
         this.context = context;
         this.apps = apps;
-        this.itemChecked = itemChecked;
+        this.itemCheckeds = itemCheckeds;
+        this.nItem = nItem;
     }
 
     private class ViewHolder {
@@ -75,21 +78,26 @@ class AppAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
 
         holder.apkName.setText(getItem(position).loadLabel(pm));
-        holder.ck1.setChecked(itemChecked[position]);
+        holder.ck1.setChecked(itemCheckeds[position]);
         holder.apkIcon.setImageDrawable(getItem(position).loadIcon(pm));
-        if (itemChecked[position])
-            holder.ck1.setChecked(true);
-        else
-            holder.ck1.setChecked(false);
 
         holder.ck1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
-                if (holder.ck1.isChecked())
-                    itemChecked[position] = true;
-                else
-                    itemChecked[position] = false;
+                if (holder.ck1.isChecked()) {
+                    if (nItem == 0) {
+                        holder.ck1.setChecked(false);
+                        Toast.makeText(v.getContext(), "...", Toast.LENGTH_SHORT).show();
+                    } else {
+                        --nItem;
+                        itemCheckeds[position] = true;
+                    }
+                } else {
+                    ++nItem;
+                    itemCheckeds[position] = false;
+
+                }
             }
         });
 
