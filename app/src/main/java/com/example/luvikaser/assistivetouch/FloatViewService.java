@@ -58,7 +58,7 @@ public class FloatViewService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
+        Log.e("FloatViewService", "onStartCommand");
         ArrayList<String> tmpArray = null;
 
         if (intent != null) {
@@ -69,6 +69,7 @@ public class FloatViewService extends Service {
             mPackageNames = tmpArray;
             SharedPreferences.Editor editor = mSharedPreferences.edit();
             for(int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
+                Log.e(i+"", mPackageNames.get(i));
                 editor.putString(i + "", mPackageNames.get(i));
             }
 

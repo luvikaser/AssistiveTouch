@@ -26,7 +26,8 @@ public class MainActivity extends Activity {
     private static final float SCREEN_RATIO = 0.6f;
     private ArrayList<ImageView> mImageList;
     private ArrayList<String> mPackageNames;
-    private PackageManager mPm;
+    private PackageManager mPackageManager;
+    private DisplayMetrics mDisplayMetrics;
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mParams;
     private ImageView mImageView = null;
@@ -38,14 +39,14 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         // Get screen size
-        DisplayMetrics dm = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        mDisplayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(mDisplayMetrics);
 
         // Set window size from screen size
-        int size = Math.min(dm.widthPixels, dm.heightPixels);
-        getWindow().setLayout((int)(size*SCREEN_RATIO), (int)(size*SCREEN_RATIO));
+        int size = Math.min(mDisplayMetrics.widthPixels, mDisplayMetrics.heightPixels);
+        getWindow().setLayout((int)(size * SCREEN_RATIO), (int)(size * SCREEN_RATIO));
 
-        mPm = getPackageManager();
+        mPackageManager = getPackageManager();
 
         mImageList = new ArrayList<>();
         mImageList.add((ImageView) findViewById(R.id.imageView11));
@@ -59,12 +60,13 @@ public class MainActivity extends Activity {
         mImageList.add((ImageView) findViewById(R.id.imageView33));
 
         Intent intent = getIntent();
-        mPackageNames = intent.getStringArrayListExtra("package_names");
+        mPackageNames = intent.getStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES);
 
-        for (int i = 0; i < mImageList.size(); ++i) {
+        for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
             if (mPackageNames.get(i).length() != 0) {
+                Log.e("ss", mPackageNames.get(i));
                 try {
-                    mImageList.get(i).setImageDrawable(mPm.getApplicationIcon(mPackageNames.get(i)));
+                    mImageList.get(i).setImageDrawable(mPackageManager.getApplicationIcon(mPackageNames.get(i)));
                 } catch (PackageManager.NameNotFoundException e) {
                     mPackageNames.set(i, "");
                 }
@@ -88,13 +90,13 @@ public class MainActivity extends Activity {
         @Override
         public void onClick(View v) {
             if (mPackageNames.get(mPosition).length() != 0) {
-                Intent intent = mPm.getLaunchIntentForPackage(mPackageNames.get(mPosition));
+                Intent intent = mPackageManager.getLaunchIntentForPackage(mPackageNames.get(mPosition));
                 finish();
                 startActivity(intent);
             } else {
                 Intent intent = new Intent(getBaseContext(), Chooser.class);
-                intent.putExtra("MESSAGE_position", mPosition);
-                intent.putStringArrayListExtra("MESSAGE_existPackages", mPackageNames);
+                intent.putExtra(Constants.MESSAGE_POSITION, mPosition);
+                intent.putStringArrayListExtra(Constants.MESSAGE_EXISTED_PACKAGES, mPackageNames);
                 startActivityForResult(intent, MY_REQUEST_CODE);
             }
         }
@@ -122,13 +124,11 @@ public class MainActivity extends Activity {
         private int initialY;
         private float initialTouchX;
         private float initialTouchY;
-        private DisplayMetrics mDisplayMetrics;
         MyOnTouchListener mListener;
 
         MyOnLongClickListener(int pos) {
             mPosition = pos;
             mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-            mDisplayMetrics = new DisplayMetrics();
             mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
         }
 
@@ -151,20 +151,14 @@ public class MainActivity extends Activity {
 
             @Override public boolean onTouch(View v, MotionEvent event) {
 
-                mDisplayMetrics = new DisplayMetrics();
-                mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
-
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         return true;
 
                     case MotionEvent.ACTION_UP:
-                        Log.e("pointer", "X = " + event.getRawX() + "Y =" + event.getRawY());
-
                         boolean mOK = true;
                         int pos = 0;
                         for(ImageView mImage: mImageList){
-                            Log.e("image", pos+"");
                             if (isPointInsideView(event.getRawX(), event.getRawY(), mImage)){
                                 if (pos == mPosition)
                                     break;
@@ -197,6 +191,11 @@ public class MainActivity extends Activity {
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
+                        if (isPointInsideView(event.getRawX(), event.getRawY(), mDeleteImage)) {
+                            mDeleteImage.setImageResource(R.mipmap.remove2);
+                        } else{
+                            mDeleteImage.setImageResource(R.mipmap.remove);
+                        }
                         mParams.x = initialX + (int) (event.getRawX() - initialTouchX);
                         mParams.y = initialY + (int) (event.getRawY() - initialTouchY);
                         mWindowManager.updateViewLayout(mImageView, mParams);
@@ -249,10 +248,9 @@ public class MainActivity extends Activity {
                     PixelFormat.TRANSLUCENT);
 
             mParamsDelete.gravity = Gravity.TOP | Gravity.LEFT;
-
-            mParamsDelete.x =  mDisplayMetrics.widthPixels / 2 - mDeleteImage.getWidth() / 2;
-            mParamsDelete.y = mDisplayMetrics.heightPixels - mDeleteImage.getHeight();
-
+            mParamsDelete.x =  mDisplayMetrics.widthPixels / 2 - mDeleteImage.getDrawable().getIntrinsicWidth() / 2;
+            mParamsDelete.y = mDisplayMetrics.heightPixels - mDeleteImage.getDrawable().getIntrinsicHeight();
+            Log.e("ss", mDeleteImage.getWidth() + " " + mDeleteImage.getHeight());
             mWindowManager.addView(mDeleteImage, mParamsDelete);
             return true;
         }
@@ -266,12 +264,12 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == MY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
-                int position = data.getIntExtra("MESSAGE_position", 0);
-                ArrayList<String> newPackages = data.getStringArrayListExtra("MESSAGE_newPackages");
+                int position = data.getIntExtra(Constants.MESSAGE_POSITION, 0);
+                ArrayList<String> newPackages = data.getStringArrayListExtra(Constants.MESSAGE_NEW_PACKAGES);
 
                 mPackageNames.set(position, newPackages.get(0));
                 try {
-                    mImageList.get(position).setImageDrawable(mPm.getApplicationIcon(mPackageNames.get(position)));
+                    mImageList.get(position).setImageDrawable(mPackageManager.getApplicationIcon(mPackageNames.get(position)));
                 } catch (PackageManager.NameNotFoundException e) {
                     Log.e("package", "package name " + mPackageNames.get(position) + " not found");
                     mPackageNames.set(position, "");
@@ -279,13 +277,13 @@ public class MainActivity extends Activity {
                 }
 
                 int i = 1;
-                for(int pos = 0; i < 9; ++pos) {
+                for(int pos = 0; i < Constants.PACKAGE_NUMBER; ++pos) {
                     if (i >= newPackages.size())
                         break;
                     if (mPackageNames.get(pos).length() == 0) {
                         mPackageNames.set(pos, newPackages.get(i));
                         try {
-                            mImageList.get(pos).setImageDrawable(mPm.getApplicationIcon(mPackageNames.get(pos)));
+                            mImageList.get(pos).setImageDrawable(mPackageManager.getApplicationIcon(mPackageNames.get(pos)));
                         } catch (PackageManager.NameNotFoundException e) {
                             Log.e("package", "package name " + mPackageNames.get(pos) + " not found");
                             mPackageNames.set(pos, "");
@@ -305,7 +303,8 @@ public class MainActivity extends Activity {
 
         // Start service
         Intent intent = new Intent(this, FloatViewService.class);
-        intent.putStringArrayListExtra("package_names", mPackageNames);
+        Log.e("MainActivity", " onDestroy");
+        intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
         startService(intent);
     }
 }
