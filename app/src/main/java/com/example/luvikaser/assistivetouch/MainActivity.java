@@ -145,7 +145,7 @@ public class MainActivity extends Activity {
         //Listener for event drag new icon
         private class MyOnTouchListener implements View.OnTouchListener{
             private ImageView image;
-
+            private boolean mIsOnDelete = false;
             MyOnTouchListener(View v) {image = (ImageView) v;}
 
             @Override public boolean onTouch(View v, MotionEvent event) {
@@ -187,14 +187,30 @@ public class MainActivity extends Activity {
                         mWindowManager.removeView(mDeleteImage);
 
                         mIsOnDrag = false;
+                        mIsOnDelete = false;
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
-                        if (isPointInsideView(event.getRawX(), event.getRawY(), mDeleteImage)) {
-                            mDeleteImage.setImageResource(R.mipmap.remove2);
-                        } else{
-                            mDeleteImage.setImageResource(R.mipmap.remove);
+                        if (!mIsOnDelete) {
+                            // Move into delete icon area
+                            if (isPointInsideView(event.getRawX(), event.getRawY(), mDeleteImage)) {
+                                mIsOnDelete = true;
+
+                                // Vibrate device
+                                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                                vibrator.vibrate(25);
+                                Log.e("vibrate", "vibrate");
+
+                                mDeleteImage.setImageResource(R.mipmap.remove2);
+                            }
+                        } else {
+                            // Move out of delete icon area
+                            if (!isPointInsideView(event.getRawX(), event.getRawY(), mDeleteImage)) {
+                                mIsOnDelete = false;
+                                mDeleteImage.setImageResource(R.mipmap.remove);
+                            }
                         }
+
                         mParams.x = initialX + (int) (event.getRawX() - initialTouchX);
                         mParams.y = initialY + (int) (event.getRawY() - initialTouchY);
                         mWindowManager.updateViewLayout(mImageView, mParams);
@@ -220,7 +236,7 @@ public class MainActivity extends Activity {
         public boolean onLongClick(View v) {
             // Vibrate device
             Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            vibrator.vibrate(500);
+            vibrator.vibrate(50);
 
             mIsOnDrag = true;
 
