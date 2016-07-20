@@ -89,8 +89,7 @@ class AppAdapter extends BaseAdapter {
                 if (holder.ck1.isChecked()) {
                     if (nItem == 0) { //If the number of applications are choosed is zero then Toast a message
                         holder.ck1.setChecked(false);
-                        //TODO: set message for Toast
-                        Toast.makeText(v.getContext(), "...", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(v.getContext(), "The panel is full. Cannot select more apps.", Toast.LENGTH_SHORT).show();
                     } else {
                         --nItem;
                         itemCheckeds[position] = true;
