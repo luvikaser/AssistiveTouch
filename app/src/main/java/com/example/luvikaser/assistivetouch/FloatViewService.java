@@ -26,9 +26,9 @@ public class FloatViewService extends Service {
 
     private static final String DATA = "PackageNames" ;
     private WindowManager mWindowManager;
-    private ImageView mImageView = null;
-    private WindowManager.LayoutParams mParams;
-    private GestureDetector mGestureDetector;
+    private ImageView mImageView = null;            // ImageView of the float icon
+    private WindowManager.LayoutParams mParams;     // Layout params of the float icon
+    private GestureDetector mGestureDetector;       // Used to detect on-click event
     private ArrayList<String> mPackageNames;
     private SharedPreferences mSharedPreferences;
     private static final String CONFIGURATION_CHANGED = "android.intent.action.CONFIGURATION_CHANGED";
@@ -41,9 +41,14 @@ public class FloatViewService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Initialize package name list
         mPackageNames = new ArrayList<>(Collections.nCopies(Constants.PACKAGE_NUMBER, ""));
+
+        // SharedPreferences used to store data
         mSharedPreferences = getSharedPreferences(DATA, Context.MODE_PRIVATE);
 
+        // Get data from shared preferences
         if (mSharedPreferences != null) {
             for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i){
                 mPackageNames.set(i, mSharedPreferences.getString(i + "", ""));
@@ -58,13 +63,14 @@ public class FloatViewService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.e("FloatViewService", "onStartCommand");
         ArrayList<String> tmpArray = null;
 
+        // Intent will be null when system automatically restart service
         if (intent != null) {
             tmpArray = intent.getStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES);
         }
 
+        // Save data
         if (tmpArray != null) {
             mPackageNames = tmpArray;
             SharedPreferences.Editor editor = mSharedPreferences.edit();
@@ -76,6 +82,7 @@ public class FloatViewService extends Service {
             editor.apply();
         }
 
+        // Service has already been started
         if (mImageView != null) {
             return START_STICKY;
         }
@@ -102,10 +109,11 @@ public class FloatViewService extends Service {
             private int initialY;
             private float initialTouchX;
             private float initialTouchY;
-            private DisplayMetrics mDisplayMetrics;
+            private DisplayMetrics mDisplayMetrics;     // Store screen size
 
             @Override public boolean onTouch(View v, MotionEvent event) {
 
+                // Get screen size
                 mDisplayMetrics = new DisplayMetrics();
                 mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
 
@@ -133,11 +141,13 @@ public class FloatViewService extends Service {
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
+                        // Update icon position
                         mParams.x = initialX + (int) (event.getRawX() - initialTouchX);
                         mParams.y = initialY + (int) (event.getRawY() - initialTouchY);
                         mWindowManager.updateViewLayout(mImageView, mParams);
                         return true;
                 }
+
                 return false;
             }
         });
@@ -195,6 +205,7 @@ public class FloatViewService extends Service {
         unregisterReceiver(mBroadcastReceiver);
     }
 
+    // Used to detect on-click event
     private class SingleTapConfirm extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
