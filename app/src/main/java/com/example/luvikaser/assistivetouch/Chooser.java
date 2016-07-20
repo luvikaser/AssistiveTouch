@@ -30,6 +30,7 @@ public class Chooser extends Activity {
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+        //Restore checked applacions when device is rotated
         mItemCheckeds = savedInstanceState.getBooleanArray(STATE_CHECKED_ITEM);
     }
 
@@ -38,14 +39,17 @@ public class Chooser extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.chooser_layout);
 
+        //Receive list existed applications
         mIntent = getIntent();
         mExistedPackages = mIntent.getStringArrayListExtra(Constants.MESSAGE_EXISTED_PACKAGES);
+
+        //Get all applications on device
         mPackageManager = getPackageManager();
         Intent main = new Intent(Intent.ACTION_MAIN, null);
-
         main.addCategory(Intent.CATEGORY_LAUNCHER);
         mLaunchables = mPackageManager.queryIntentActivities(main, 0);
 
+        //Remove existed applications from list all applications
         for(Iterator<ResolveInfo> iterator = mLaunchables.iterator(); iterator.hasNext(); ) {
             ResolveInfo resolveInfo = iterator.next();
             if (mExistedPackages.contains(resolveInfo.activityInfo.packageName)) {
@@ -53,16 +57,19 @@ public class Chooser extends Activity {
             }
         }
 
+        //Sort list applications
         Collections.sort(mLaunchables,
                 new ResolveInfo.DisplayNameComparator(mPackageManager));
 
 
+        //Listener when click button "Done"
         ((Button) findViewById(R.id.button)).setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
 
                 Intent newIntent = new Intent();
+                //Send position of clicked icon
                 newIntent.putExtra(Constants.MESSAGE_POSITION, mIntent.getIntExtra(Constants.MESSAGE_POSITION, 0));
 
                 ArrayList<String> listPackageChoose = new ArrayList<>();
@@ -72,6 +79,7 @@ public class Chooser extends Activity {
                     }
                 }
 
+                //Send list applications is choosed
                 newIntent.putStringArrayListExtra(Constants.MESSAGE_NEW_PACKAGES, listPackageChoose);
                 if (listPackageChoose.size() == 0) {
                     setResult(MainActivity.RESULT_CANCELED, newIntent);
@@ -99,6 +107,7 @@ public class Chooser extends Activity {
             }
         }
 
+        //Adapter for listView containing list applications (with limit of the number choosing applications)
         mAdapter = new AppAdapter(this, mLaunchables, mPackageManager, mItemCheckeds, Constants.PACKAGE_NUMBER - nChosen);
 
         ListView listView = (ListView) findViewById(R.id.listView);
@@ -108,6 +117,7 @@ public class Chooser extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        //Save checked applacions when device is rotated
         outState.putBooleanArray(STATE_CHECKED_ITEM, AppAdapter.itemCheckeds);
     }
 }

@@ -77,6 +77,7 @@ class AppAdapter extends BaseAdapter {
             holder = (ViewHolder) convertView.getTag();
         }
 
+        //Set data for view is located at position
         holder.apkName.setText(getItem(position).loadLabel(mPackageManager));
         holder.ck1.setChecked(itemCheckeds[position]);
         holder.apkIcon.setImageDrawable(getItem(position).loadIcon(mPackageManager));
@@ -86,9 +87,9 @@ class AppAdapter extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 if (holder.ck1.isChecked()) {
-                    if (nItem == 0) {
+                    if (nItem == 0) { //If the number of applications are choosed is zero then Toast a message
                         holder.ck1.setChecked(false);
-                        // TODO: change toast message
+                        //TODO: set message for Toast
                         Toast.makeText(v.getContext(), "...", Toast.LENGTH_SHORT).show();
                     } else {
                         --nItem;
