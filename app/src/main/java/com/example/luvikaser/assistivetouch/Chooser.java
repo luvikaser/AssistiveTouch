@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by haibt on 7/15/2016.
+ * Created by Luvi Kaser on 7/15/2016.
  */
 public class Chooser extends Activity {
 

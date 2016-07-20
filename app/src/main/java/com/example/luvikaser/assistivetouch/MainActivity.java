@@ -20,6 +20,10 @@ import android.widget.ImageView;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Created by Luvi Kaser on 7/15/2016.
+ */
+
 public class MainActivity extends Activity {
 
     public static final int MY_REQUEST_CODE = 12345;
@@ -28,10 +32,6 @@ public class MainActivity extends Activity {
     private ArrayList<String> mPackageNames;
     private PackageManager mPackageManager;
     private DisplayMetrics mDisplayMetrics;
-    private WindowManager mWindowManager;
-    private WindowManager.LayoutParams mParams;
-    private ImageView mImageView = null;
-    private ImageView mDeleteImage = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +46,10 @@ public class MainActivity extends Activity {
         int size = Math.min(mDisplayMetrics.widthPixels, mDisplayMetrics.heightPixels);
         getWindow().setLayout((int)(size * SCREEN_RATIO), (int)(size * SCREEN_RATIO));
 
+        //Get package manager
         mPackageManager = getPackageManager();
 
+        //Load icons
         mImageList = new ArrayList<>();
         mImageList.add((ImageView) findViewById(R.id.imageView11));
         mImageList.add((ImageView) findViewById(R.id.imageView12));
@@ -59,12 +61,13 @@ public class MainActivity extends Activity {
         mImageList.add((ImageView) findViewById(R.id.imageView32));
         mImageList.add((ImageView) findViewById(R.id.imageView33));
 
+        //Get list of existed applications
         Intent intent = getIntent();
         mPackageNames = intent.getStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES);
 
+        //Load data and set listeners for icons
         for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
             if (mPackageNames.get(i).length() != 0) {
-                Log.e("ss", mPackageNames.get(i));
                 try {
                     mImageList.get(i).setImageDrawable(mPackageManager.getApplicationIcon(mPackageNames.get(i)));
                 } catch (PackageManager.NameNotFoundException e) {
@@ -80,6 +83,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    //Listener for event when click icon
     private class MyOnClickListener implements View.OnClickListener {
 
         private int mPosition;
@@ -89,11 +93,12 @@ public class MainActivity extends Activity {
 
         @Override
         public void onClick(View v) {
+            //Open application when icon contained application
             if (mPackageNames.get(mPosition).length() != 0) {
                 Intent intent = mPackageManager.getLaunchIntentForPackage(mPackageNames.get(mPosition));
                 finish();
                 startActivity(intent);
-            } else {
+            } else { //Open list applications for choosing when icon not contained application
                 Intent intent = new Intent(getBaseContext(), Chooser.class);
                 intent.putExtra(Constants.MESSAGE_POSITION, mPosition);
                 intent.putStringArrayListExtra(Constants.MESSAGE_EXISTED_PACKAGES, mPackageNames);
@@ -102,6 +107,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    //Function check positon of pointer inside a view
     private static boolean isPointInsideView(float x, float y, View view){
         int location[] = new int[2];
         view.getLocationOnScreen(location);
@@ -116,8 +122,13 @@ public class MainActivity extends Activity {
         }
     }
 
+    //Listener for event when long lick icon
     private class MyOnLongClickListener implements View.OnLongClickListener, View.OnTouchListener {
 
+        private WindowManager mWindowManager;
+        private WindowManager.LayoutParams mParams;
+        private ImageView mImageView = null;
+        private ImageView mDeleteImage = null;
         private int mPosition;
         private boolean mIsOnDrag = false;
         private int initialX;
@@ -129,21 +140,9 @@ public class MainActivity extends Activity {
         MyOnLongClickListener(int pos) {
             mPosition = pos;
             mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-            mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
         }
 
-        @Override
-        public boolean onTouch(View view, MotionEvent motionEvent) {
-
-            if (!mIsOnDrag) {
-                initialTouchX = motionEvent.getRawX();
-                initialTouchY = motionEvent.getRawY();
-            } else if (mListener != null) {
-                mListener.onTouch(mImageView, motionEvent);
-            }
-            return false;
-        }
-
+        //Listener for event drag new icon
         private class MyOnTouchListener implements View.OnTouchListener{
             private ImageView image;
 
@@ -206,6 +205,18 @@ public class MainActivity extends Activity {
         }
 
         @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+
+            if (!mIsOnDrag) { //Get position of pointer when long click and not drag icon
+                initialTouchX = motionEvent.getRawX();
+                initialTouchY = motionEvent.getRawY();
+            } else if (mListener != null) { //Set onTouch for new icon
+                mListener.onTouch(mImageView, motionEvent);
+            }
+            return false;
+        }
+
+        @Override
         public boolean onLongClick(View v) {
             // Vibrate device
             Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -213,6 +224,7 @@ public class MainActivity extends Activity {
 
             mIsOnDrag = true;
 
+            //Create new icon for drag when long click icon (set image of old icon is null)
             mImageView = new ImageView(getBaseContext());
             mImageView.setImageDrawable(((ImageView)v).getDrawable());
             ((ImageView)v).setImageDrawable(null);
@@ -232,11 +244,14 @@ public class MainActivity extends Activity {
             initialX = mParams.x;
             initialY = mParams.y;
 
+            //Set listener onTouch for new icon
             mListener = new MyOnTouchListener(v);
             mImageView.setOnTouchListener(mListener);
 
+            //Add new icon
             mWindowManager.addView(mImageView, mParams);
 
+            //Create delete icon when long lick icon
             mDeleteImage = new ImageView(getBaseContext());
             mDeleteImage.setImageResource(R.mipmap.remove);
             WindowManager.LayoutParams mParamsDelete;
@@ -250,32 +265,32 @@ public class MainActivity extends Activity {
             mParamsDelete.gravity = Gravity.TOP | Gravity.LEFT;
             mParamsDelete.x =  mDisplayMetrics.widthPixels / 2 - mDeleteImage.getDrawable().getIntrinsicWidth() / 2;
             mParamsDelete.y = mDisplayMetrics.heightPixels - mDeleteImage.getDrawable().getIntrinsicHeight();
-            Log.e("ss", mDeleteImage.getWidth() + " " + mDeleteImage.getHeight());
+
+            //Add delete icon
             mWindowManager.addView(mDeleteImage, mParamsDelete);
             return true;
         }
     }
 
-
-
+    //Receive list of choosed applications when click icon not contained application
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.d("MainActivity", "onActivityResult");
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == MY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
                 int position = data.getIntExtra(Constants.MESSAGE_POSITION, 0);
                 ArrayList<String> newPackages = data.getStringArrayListExtra(Constants.MESSAGE_NEW_PACKAGES);
 
+                //Set first choosed application for the cliked icon
                 mPackageNames.set(position, newPackages.get(0));
                 try {
                     mImageList.get(position).setImageDrawable(mPackageManager.getApplicationIcon(mPackageNames.get(position)));
                 } catch (PackageManager.NameNotFoundException e) {
-                    Log.e("package", "package name " + mPackageNames.get(position) + " not found");
                     mPackageNames.set(position, "");
                     mImageList.get(position).setImageResource(R.drawable.plussign);
                 }
 
+                //Set remaining applications for icons don't contain application
                 int i = 1;
                 for(int pos = 0; i < Constants.PACKAGE_NUMBER; ++pos) {
                     if (i >= newPackages.size())
@@ -301,9 +316,8 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
 
-        // Start service
+        //Start service for updating data
         Intent intent = new Intent(this, FloatViewService.class);
-        Log.e("MainActivity", " onDestroy");
         intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
         startService(intent);
     }
