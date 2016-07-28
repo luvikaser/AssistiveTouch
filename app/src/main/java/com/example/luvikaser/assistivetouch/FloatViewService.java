@@ -33,6 +33,7 @@ public class FloatViewService extends Service {
     private ArrayList<String> mPackageNames;
     private SharedPreferences mSharedPreferences;
     private AnimationTimer mAnimationTimer;
+
     /**
      * Listen to the screen rotation
      */
@@ -132,13 +133,20 @@ public class FloatViewService extends Service {
                 mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
 
                 if (mGestureDetector.onTouchEvent(event)) {
-                    // On click event, start the main activity
-                    Intent intent = new Intent(FloatViewService.this, MainActivity.class);
 
-                    // Use FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS to hide app from recent apps
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-                    intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
-                    startActivity(intent);
+                    if (MainActivity.isActive) {
+                        Intent intent = new Intent();
+                        intent.setAction(Constants.ACTION_CLOSE);
+                        sendBroadcast(intent);
+                    } else {
+                        // On click event, start the main activity
+                        Intent intent = new Intent(FloatViewService.this, MainActivity.class);
+
+                        // Use FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS to hide app from recent apps
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                        intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
+                        startActivity(intent);
+                    }
                     return true;
                 }
 

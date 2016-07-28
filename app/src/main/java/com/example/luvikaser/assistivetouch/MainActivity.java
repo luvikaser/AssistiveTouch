@@ -1,8 +1,11 @@
 package com.example.luvikaser.assistivetouch;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
@@ -30,6 +33,16 @@ public class MainActivity extends Activity {
     private ArrayList<String> mPackageNames;
     private PackageManager mPackageManager;
     private DisplayMetrics mDisplayMetrics;
+    public static boolean isActive;
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(Constants.ACTION_CLOSE)) {
+                finish();
+            }
+        }
+    };
 
     //Function check positon of pointer inside a view
     private static boolean isPointInsideView(float x, float y, View view) {
@@ -94,6 +107,22 @@ public class MainActivity extends Activity {
             mImageList.get(i).setOnLongClickListener(myOnLongClickListener);
             mImageList.get(i).setOnTouchListener(myOnLongClickListener);
         }
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Constants.ACTION_CLOSE);
+        registerReceiver(mReceiver, filter);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        isActive = true;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        isActive = false;
     }
 
     //Receive list of choosed applications when click icon not contained application
@@ -143,6 +172,8 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(this, FloatViewService.class);
         intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
         startService(intent);
+
+        unregisterReceiver(mReceiver);
     }
 
     //Listener for event when click icon
@@ -161,7 +192,8 @@ public class MainActivity extends Activity {
                 Intent intent = mPackageManager.getLaunchIntentForPackage(mPackageNames.get(mPosition));
                 finish();
                 startActivity(intent);
-            } else { //Open list applications for choosing when icon not contained application
+            } else {
+                //Open list applications for choosing when icon not contained application
                 Intent intent = new Intent(getBaseContext(), Chooser.class);
                 intent.putExtra(Constants.MESSAGE_POSITION, mPosition);
                 intent.putStringArrayListExtra(Constants.MESSAGE_EXISTED_PACKAGES, mPackageNames);

@@ -1,10 +1,12 @@
 package com.example.luvikaser.assistivetouch;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
@@ -26,6 +28,7 @@ public class Chooser extends Activity {
     private AppAdapter mAdapter = null;
     private boolean[] mItemCheckeds = null;
     private Intent mIntent = null;
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
@@ -38,6 +41,8 @@ public class Chooser extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.chooser_layout);
+
+        mProgressDialog = ProgressDialog.show(this, "Loading...", "Please wait!");
 
         //Receive list existed applications
         mIntent = getIntent();
@@ -112,6 +117,10 @@ public class Chooser extends Activity {
 
         ListView listView = (ListView) findViewById(R.id.listView);
         listView.setAdapter(mAdapter);
+
+        if (mProgressDialog != null) {
+            mProgressDialog.dismiss();
+        }
     }
 
     @Override
