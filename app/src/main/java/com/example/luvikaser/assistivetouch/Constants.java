@@ -5,7 +5,9 @@ package com.example.luvikaser.assistivetouch;
  */
 public class Constants {
 
-    /** Intent names */
+    /**
+     * Intent names
+     */
     public static final String MESSAGE_POSITION = "MESSAGE_position";
     public static final String MESSAGE_EXISTED_PACKAGES = "MESSAGE_existedPackages";
     public static final String MESSAGE_NEW_PACKAGES = "MESSAGE_newPackages";

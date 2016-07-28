@@ -1,16 +1,11 @@
 package com.example.luvikaser.assistivetouch;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.ImageView;
@@ -23,11 +18,11 @@ import java.util.List;
  * Created by Luvi Kaser on 7/18/2016.
  */
 class AppAdapter extends BaseAdapter {
+    public static boolean[] itemCheckeds;
     private PackageManager mPackageManager = null;
     private Activity mContext;
     private int nItem;
     private List<ResolveInfo> mApps;
-    public static boolean[] itemCheckeds;
 
     AppAdapter(Activity context, List<ResolveInfo> apps, PackageManager packageManager, boolean[] itemCheckeds, int nItem) {
         super();
@@ -36,12 +31,6 @@ class AppAdapter extends BaseAdapter {
         this.mApps = apps;
         this.itemCheckeds = itemCheckeds;
         this.nItem = nItem;
-    }
-
-    private class ViewHolder {
-        ImageView apkIcon;
-        TextView apkName;
-        CheckBox ck1;
     }
 
     @Override
@@ -102,6 +91,12 @@ class AppAdapter extends BaseAdapter {
         });
 
         return convertView;
+    }
+
+    private class ViewHolder {
+        ImageView apkIcon;
+        TextView apkName;
+        CheckBox ck1;
     }
 
 }

@@ -7,15 +7,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
@@ -24,14 +23,28 @@ import java.util.Collections;
 
 public class FloatViewService extends Service {
 
-    private static final String DATA = "PackageNames" ;
+    private static final String DATA = "PackageNames";
+    private static final String CONFIGURATION_CHANGED = "android.intent.action.CONFIGURATION_CHANGED";
+    private static final int ABS_ACCELERATION = 4;
     private WindowManager mWindowManager;
     private ImageView mImageView = null;            // ImageView of the float icon
     private WindowManager.LayoutParams mParams;     // Layout params of the float icon
     private GestureDetector mGestureDetector;       // Used to detect on-click event
     private ArrayList<String> mPackageNames;
     private SharedPreferences mSharedPreferences;
-    private static final String CONFIGURATION_CHANGED = "android.intent.action.CONFIGURATION_CHANGED";
+    private AnimationTimer mAnimationTimer;
+    /**
+     * Listen to the screen rotation
+     */
+    public BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent myIntent) {
+
+            if (myIntent.getAction().equals(CONFIGURATION_CHANGED)) {
+                moveIconToSides();
+            }
+        }
+    };
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -50,7 +63,7 @@ public class FloatViewService extends Service {
 
         // Get data from shared preferences
         if (mSharedPreferences != null) {
-            for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i){
+            for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
                 mPackageNames.set(i, mSharedPreferences.getString(i + "", ""));
             }
         }
@@ -74,8 +87,8 @@ public class FloatViewService extends Service {
         if (tmpArray != null) {
             mPackageNames = tmpArray;
             SharedPreferences.Editor editor = mSharedPreferences.edit();
-            for(int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
-                Log.e(i+"", mPackageNames.get(i));
+            for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
+                Log.e(i + "", mPackageNames.get(i));
                 editor.putString(i + "", mPackageNames.get(i));
             }
 
@@ -111,7 +124,8 @@ public class FloatViewService extends Service {
             private float initialTouchY;
             private DisplayMetrics mDisplayMetrics;     // Store screen size
 
-            @Override public boolean onTouch(View v, MotionEvent event) {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
 
                 // Get screen size
                 mDisplayMetrics = new DisplayMetrics();
@@ -145,6 +159,11 @@ public class FloatViewService extends Service {
                         mParams.x = initialX + (int) (event.getRawX() - initialTouchX);
                         mParams.y = initialY + (int) (event.getRawY() - initialTouchY);
                         mWindowManager.updateViewLayout(mImageView, mParams);
+
+                        if (mAnimationTimer != null) {
+                            mAnimationTimer.cancel();
+                        }
+
                         return true;
                 }
 
@@ -157,41 +176,41 @@ public class FloatViewService extends Service {
         return START_STICKY;
     }
 
-    /** Listen to the screen rotation */
-    public BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent myIntent) {
-
-            if (myIntent.getAction().equals(CONFIGURATION_CHANGED)) {
-                moveIconToSides();
-            }
-        }
-    };
-
-    /** Move the icon to a side of the screen */
+    /**
+     * Move the icon to a side of the screen
+     */
     private void moveIconToSides() {
         DisplayMetrics mDisplayMetrics = new DisplayMetrics();
         mWindowManager.getDefaultDisplay().getMetrics(mDisplayMetrics);
 
+        // Maximum possible x-coordinate
+        final int maxX = mDisplayMetrics.widthPixels - mImageView.getWidth();
+
         // Standardize the coordinates
-        mParams.x = Math.min(Math.max(0, mParams.x), mDisplayMetrics.widthPixels - mImageView.getWidth());
+        mParams.x = Math.min(Math.max(0, mParams.x), maxX);
         mParams.y = Math.min(Math.max(0, mParams.y), mDisplayMetrics.heightPixels - mImageView.getHeight());
+
+        int acceleration;       // Moving acceleration, positive if move to right, negative if move to left
 
         // Distance to 2 sides of screen
         int d1, d2;
         d1 = mParams.x;
-        d2 = mDisplayMetrics.widthPixels - mParams.x - mImageView.getWidth();
+        d2 = maxX - mParams.x;
 
         // Set the x-coordinate to the nearer side
         if (d1 < d2) {
-            mParams.x = 0;
+            acceleration = -ABS_ACCELERATION;
         } else {
-            mParams.x = mDisplayMetrics.widthPixels - mImageView.getWidth();
+            acceleration = ABS_ACCELERATION;
         }
 
-        mWindowManager.updateViewLayout(mImageView, mParams);
-    }
+        if (mAnimationTimer == null) {
+            mAnimationTimer = new AnimationTimer(2000, 5);
+        }
 
+        mAnimationTimer.updateParams(acceleration, maxX);
+        mAnimationTimer.start();
+    }
 
     @Override
     public void onDestroy() {
@@ -202,7 +221,55 @@ public class FloatViewService extends Service {
             mImageView = null;
         }
 
+        if (mAnimationTimer != null) {
+            mAnimationTimer.cancel();
+            mAnimationTimer = null;
+        }
+
         unregisterReceiver(mBroadcastReceiver);
+    }
+
+    /**
+     * Used to move icon to side of screen with animation
+     */
+    class AnimationTimer extends CountDownTimer {
+
+        private int mAcceleration;
+        private int mMaxX;
+        private int mSpeed;     // Moving speed
+
+        AnimationTimer(long arg0, long arg1) {
+            super(arg0, arg1);
+            mSpeed = 0;
+        }
+
+        public void updateParams(int acceleration, int maxX) {
+            mAcceleration = acceleration;
+            mMaxX = maxX;
+            mSpeed = 0;
+        }
+
+        @Override
+        public void onTick(long l) {
+            mSpeed += mAcceleration;
+
+            mParams.x += mSpeed;
+            mParams.x = Math.min(Math.max(0, mParams.x), mMaxX);
+//            Log.w("x", mParams.x + "");
+
+            mWindowManager.updateViewLayout(mImageView, mParams);
+
+            if (mParams.x == 0 || mParams.x == mMaxX) {
+                this.cancel();
+            }
+        }
+
+        @Override
+        public void onFinish() {
+            if (mParams.x != 0 && mParams.x != mMaxX && mAcceleration != 0) {
+                this.start();
+            }
+        }
     }
 
     // Used to detect on-click event

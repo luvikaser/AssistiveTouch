@@ -50,7 +50,7 @@ public class Chooser extends Activity {
         mLaunchables = mPackageManager.queryIntentActivities(main, 0);
 
         //Remove existed applications from list all applications
-        for(Iterator<ResolveInfo> iterator = mLaunchables.iterator(); iterator.hasNext(); ) {
+        for (Iterator<ResolveInfo> iterator = mLaunchables.iterator(); iterator.hasNext(); ) {
             ResolveInfo resolveInfo = iterator.next();
             if (mExistedPackages.contains(resolveInfo.activityInfo.packageName)) {
                 iterator.remove();
