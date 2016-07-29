@@ -28,7 +28,7 @@ import java.util.ArrayList;
 public class MainActivity extends Activity {
 
     public static final int MY_REQUEST_CODE = 12345;
-    private static final float SCREEN_RATIO = 0.6f;
+    public static final float SCREEN_RATIO = 0.6f;
     private ArrayList<ImageView> mImageList;
     private ArrayList<String> mPackageNames;
     private PackageManager mPackageManager;
@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
                         try {
                             mImageList.get(pos).setImageDrawable(mPackageManager.getApplicationIcon(mPackageNames.get(pos)));
                         } catch (PackageManager.NameNotFoundException e) {
-                            Log.e("package", "package name " + mPackageNames.get(pos) + " not found");
+//                            Log.e("package", "package name " + mPackageNames.get(pos) + " not found");
                             mPackageNames.set(pos, "");
                             mImageList.get(pos).setImageResource(R.drawable.plussign);
                         }
@@ -354,7 +354,7 @@ public class MainActivity extends Activity {
                                 // Vibrate device
                                 Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                                 vibrator.vibrate(25);
-                                Log.e("vibrate", "vibrate");
+//                                Log.e("vibrate", "vibrate");
 
                                 mDeleteImage.setImageResource(R.mipmap.remove2);
                             }
