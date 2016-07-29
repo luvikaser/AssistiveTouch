@@ -34,6 +34,7 @@ public class MainActivity extends Activity {
     private PackageManager mPackageManager;
     private DisplayMetrics mDisplayMetrics;
     public static boolean isActive;
+    public static ProgressDialog progressDialog;
 
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -193,6 +194,9 @@ public class MainActivity extends Activity {
                 finish();
                 startActivity(intent);
             } else {
+
+                progressDialog = ProgressDialog.show(MainActivity.this, "Loading...", "Please wait!");
+
                 //Open list applications for choosing when icon not contained application
                 Intent intent = new Intent(getBaseContext(), Chooser.class);
                 intent.putExtra(Constants.MESSAGE_POSITION, mPosition);

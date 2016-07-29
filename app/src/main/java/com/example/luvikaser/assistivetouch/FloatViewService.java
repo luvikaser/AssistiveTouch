@@ -27,12 +27,13 @@ public class FloatViewService extends Service {
     private static final String CONFIGURATION_CHANGED = "android.intent.action.CONFIGURATION_CHANGED";
     private static final int ABS_ACCELERATION = 4;
     private WindowManager mWindowManager;
-    private ImageView mImageView = null;            // ImageView of the float icon
+    private ImageView mImageView;                   // ImageView of the float icon
     private WindowManager.LayoutParams mParams;     // Layout params of the float icon
     private GestureDetector mGestureDetector;       // Used to detect on-click event
     private ArrayList<String> mPackageNames;
     private SharedPreferences mSharedPreferences;
     private AnimationTimer mAnimationTimer;
+    private ImageView mGhostAnimImageView;          // Used for zoom-in effect when open main activity
 
     /**
      * Listen to the screen rotation

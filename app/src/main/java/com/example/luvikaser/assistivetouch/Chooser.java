@@ -28,7 +28,6 @@ public class Chooser extends Activity {
     private AppAdapter mAdapter = null;
     private boolean[] mItemCheckeds = null;
     private Intent mIntent = null;
-    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
@@ -41,8 +40,6 @@ public class Chooser extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.chooser_layout);
-
-        mProgressDialog = ProgressDialog.show(this, "Loading...", "Please wait!");
 
         //Receive list existed applications
         mIntent = getIntent();
@@ -118,8 +115,9 @@ public class Chooser extends Activity {
         ListView listView = (ListView) findViewById(R.id.listView);
         listView.setAdapter(mAdapter);
 
-        if (mProgressDialog != null) {
-            mProgressDialog.dismiss();
+        if (MainActivity.progressDialog != null) {
+            MainActivity.progressDialog.dismiss();
+            MainActivity.progressDialog = null;
         }
     }
 
