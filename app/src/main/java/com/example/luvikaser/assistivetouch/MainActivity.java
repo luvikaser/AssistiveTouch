@@ -65,6 +65,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        overridePendingTransition(R.anim.zoom_enter, R.anim.zoom_exit);
+
         // Get screen size
         mDisplayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(mDisplayMetrics);

@@ -9,9 +9,7 @@ import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.os.CountDownTimer;
 import android.os.IBinder;
-import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -27,8 +25,6 @@ public class FloatViewService extends Service {
     private static final String DATA = "PackageNames";
     private static final String CONFIGURATION_CHANGED = "android.intent.action.CONFIGURATION_CHANGED";
     private static final int ABS_ACCELERATION = 4;
-    private static final int NUMBER_GHOST_FRAMES = 10;   // Number of ghost frames while zooming in
-    private static final int GHOST_FRAMES_INTERVAL = 10;
     private static final int ICON_ANIM_INTERVAL = 5;
     private WindowManager mWindowManager;
     private ImageView mImageView;                   // ImageView of the float icon
@@ -37,9 +33,6 @@ public class FloatViewService extends Service {
     private ArrayList<String> mPackageNames;
     private SharedPreferences mSharedPreferences;
     private AnimationTimer mAnimationTimer;
-    private ImageView mGhostAnimImageView;          // Used for zoom-in effect when open main activity
-    private WindowManager.LayoutParams mGhostParams;
-    private GhostAnimationTimer mGhostTimer;
 
     /**
      * Listen to the screen rotation
@@ -96,7 +89,7 @@ public class FloatViewService extends Service {
             mPackageNames = tmpArray;
             SharedPreferences.Editor editor = mSharedPreferences.edit();
             for (int i = 0; i < Constants.PACKAGE_NUMBER; ++i) {
-                Log.e(i + "", mPackageNames.get(i));
+//                Log.e(i + "", mPackageNames.get(i));
                 editor.putString(i + "", mPackageNames.get(i));
             }
 
@@ -146,49 +139,13 @@ public class FloatViewService extends Service {
                         intent.setAction(Constants.ACTION_CLOSE);
                         sendBroadcast(intent);
                     } else {
-                        // Prepare for ghost animation
-                        if (mGhostAnimImageView != null) {
-                            mGhostTimer.cancel();
-                            mWindowManager.removeView(mGhostAnimImageView);
-                            mGhostAnimImageView = null;
-                        }
+                        // On click event, start the main activity
+                        Intent intent = new Intent(FloatViewService.this, MainActivity.class);
 
-                        mGhostAnimImageView = new ImageView(FloatViewService.this);
-                        mGhostAnimImageView.setBackgroundColor(
-                                ContextCompat.getColor(getApplicationContext(), R.color.TransBackground2));
-
-                        if (mGhostParams == null) {
-                            mGhostParams = new WindowManager.LayoutParams(
-                                    WindowManager.LayoutParams.WRAP_CONTENT,
-                                    WindowManager.LayoutParams.WRAP_CONTENT,
-                                    WindowManager.LayoutParams.TYPE_PHONE,
-                                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                                    PixelFormat.TRANSLUCENT);
-                            mGhostParams.gravity = Gravity.TOP | Gravity.LEFT;
-                        }
-
-                        mGhostParams.x = mParams.x;
-                        mGhostParams.y = mParams.y;
-                        mGhostParams.width = Math.min(mImageView.getWidth(), mImageView.getHeight());
-                        mGhostParams.height = mGhostParams.width;
-
-                        mWindowManager.addView(mGhostAnimImageView, mGhostParams);
-
-                        if (mGhostTimer == null) {
-                            mGhostTimer = new GhostAnimationTimer(1000, GHOST_FRAMES_INTERVAL);
-                        } else {
-                            mGhostTimer.cancel();
-                        }
-
-                        int destX, destY, destSz;
-                        destSz = Math.min(mDisplayMetrics.heightPixels, mDisplayMetrics.widthPixels);
-                        destSz = (int)(destSz * MainActivity.SCREEN_RATIO);
-                        destX = (mDisplayMetrics.widthPixels - destSz) / 2;
-                        destY = (mDisplayMetrics.heightPixels - destSz) / 2;
-
-                        mGhostTimer.updateParams(
-                                mGhostParams.x, mGhostParams.y, mGhostParams.width, destX, destY, destSz);
-                        mGhostTimer.start();
+                        // Use FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS to hide app from recent apps
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                        intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
+                        startActivity(intent);
                     }
                     return true;
                 }
@@ -272,11 +229,6 @@ public class FloatViewService extends Service {
             mImageView = null;
         }
 
-        if (mGhostAnimImageView != null) {
-            mWindowManager.removeView(mGhostAnimImageView);
-            mGhostAnimImageView = null;
-        }
-
         if (mAnimationTimer != null) {
             mAnimationTimer.cancel();
             mAnimationTimer = null;
@@ -309,7 +261,7 @@ public class FloatViewService extends Service {
         public void onTick(long l) {
             mSpeed += mAcceleration;
 
-            Log.d("mSpeed", mSpeed + " " + l);
+//            Log.d("mSpeed", mSpeed + " " + l);
 
             mParams.x += mSpeed;
             mParams.x = Math.min(Math.max(0, mParams.x), mMaxX);
@@ -326,84 +278,6 @@ public class FloatViewService extends Service {
         public void onFinish() {
             if (mParams.x != 0 && mParams.x != mMaxX && mAcceleration != 0) {
                 this.start();
-            }
-        }
-    }
-
-    class GhostAnimationTimer extends CountDownTimer {
-
-        // Initial position
-        private int mInitX;
-        private int mInitY;
-        private int mInitSz;
-
-        // Destination position
-        private int mDestX;
-        private int mDestY;
-        private int mDestSz;
-
-        private int mCnt;
-
-        GhostAnimationTimer(long arg0, long arg1) {
-            super(arg0, arg1);
-            mCnt = 0;
-        }
-
-        public void updateParams(int initX, int initY, int initSz, int destX, int destY, int destSz) {
-            mInitX = initX;
-            mInitY = initY;
-            mInitSz = initSz;
-            mDestX = destX;
-            mDestY = destY;
-            mDestSz = destSz;
-            mCnt = 0;
-        }
-
-        @Override
-        public void onTick(long l) {
-            ++mCnt;
-            Log.d("mCnt", mCnt + " " + l);
-
-            if (mCnt > NUMBER_GHOST_FRAMES) {
-                this.cancel();
-                return;
-            }
-
-            // Calculate new position
-            mGhostParams.x = mInitX + (mDestX - mInitX) / NUMBER_GHOST_FRAMES * mCnt;
-            mGhostParams.y = mInitY + (mDestY - mInitY) / NUMBER_GHOST_FRAMES * mCnt;
-            mGhostParams.width = mInitSz + (mDestSz - mInitSz) / NUMBER_GHOST_FRAMES * mCnt;
-            mGhostParams.height = mGhostParams.width;
-
-            mWindowManager.updateViewLayout(mGhostAnimImageView, mGhostParams);
-
-            if (mCnt == NUMBER_GHOST_FRAMES) {
-                this.cancel();
-                if (mGhostAnimImageView != null){
-//                Log.e("ghostview", mGhostAnimImageView + "");
-                    mWindowManager.removeView(mGhostAnimImageView);
-                    mGhostAnimImageView = null;
-
-                    // On click event, start the main activity
-                    Intent intent = new Intent(FloatViewService.this, MainActivity.class);
-
-                    // Use FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS to hide app from recent apps
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-                    intent.putStringArrayListExtra(Constants.MESSAGE_PACKAGE_NAMES, mPackageNames);
-                    startActivity(intent);
-                }
-            }
-        }
-
-        @Override
-        public void onFinish() {
-            Log.e("ghosttimer", "onFinish");
-            Log.d("mCnt onFinish", mCnt + "");
-
-            if (mGhostAnimImageView != null){
-//            Log.e("ghostview", mGhostAnimImageView + "");
-                mWindowManager.removeView(mGhostAnimImageView);
-                mGhostAnimImageView = null;
             }
         }
     }

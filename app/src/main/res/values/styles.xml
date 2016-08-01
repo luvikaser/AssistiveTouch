@@ -8,9 +8,6 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <color name="TransBackground1">#0000ff00</color>
-    <color name="TransBackground2">#CC000000</color>
-    <color name="TransBackground3">#BBAAAAAA</color>
     <style name="TransStyle" parent="android:Theme.Translucent">
         <item name="android:windowBackground">@color/TransBackground1</item>
         <item name="android:windowNoTitle">true</item>
