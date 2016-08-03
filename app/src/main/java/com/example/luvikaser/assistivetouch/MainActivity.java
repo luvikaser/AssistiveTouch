@@ -128,6 +128,12 @@ public class MainActivity extends Activity {
         isActive = false;
     }
 
+    @Override
+    public void finish() {
+        super.finish();
+        overridePendingTransition(R.anim.zoom_enter, R.anim.zoom_exit);
+    }
+
     //Receive list of choosed applications when click icon not contained application
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
